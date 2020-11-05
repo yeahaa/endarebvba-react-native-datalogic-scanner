@@ -5,6 +5,7 @@ buildscript {
   repositories {
     google()
     jcenter()
+    maven { url "https://jitpack.io" }
   }
 
   dependencies {
@@ -25,17 +26,24 @@ def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties['DatalogicScanner_' + name]).toInteger()
 }
 
+configurations.all {
+     resolutionStrategy {
+       force "com.facebook.soloader:soloader:0.8.0"
+     }
+}
+
 android {
-  compileSdkVersion getExtOrIntegerDefault('compileSdkVersion')
+  compileSdkVersion 'Datalogic:Datalogic SDK v1:23'
   buildToolsVersion getExtOrDefault('buildToolsVersion')
   defaultConfig {
     minSdkVersion 16
-    targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
+//    targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
+    targetSdkVersion 23
     versionCode 1
     versionName "1.0"
-    
+
   }
-  
+
   buildTypes {
     release {
       minifyEnabled false
@@ -127,4 +135,6 @@ dependencies {
   // noinspection GradleDynamicVersion
   api 'com.facebook.react:react-native:+'
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+  implementation 'com.github.datalogic:datalogic-android-sdk:1.12'
 }
