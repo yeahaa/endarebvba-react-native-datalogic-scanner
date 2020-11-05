@@ -1,7 +1,10 @@
 import { NativeModules } from 'react-native';
 
 type DatalogicScannerType = {
-  multiply(a: number, b: number): Promise<number>;
+  testScan(success: boolean): Promise<string>;
+  scanOnce(): Promise<string>;
+  startScanning(): Promise<string>;
+  stopScanning(): void;
 };
 
 const { DatalogicScanner } = NativeModules;
