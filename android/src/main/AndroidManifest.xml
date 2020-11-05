@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.reactnativedatalogicscanner">
-
+  <application>
+    <uses-library
+      android:name="com.datalogic.device"
+      android:required="true"/>
+  </application>
 </manifest>
