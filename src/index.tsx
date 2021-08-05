@@ -5,6 +5,9 @@ type DatalogicScannerType = {
   scanOnce(): Promise<string>;
   startScanning(): Promise<string>;
   stopScanning(): void;
+  unlockFromCradle(): Promise<boolean>;
+  getCradleState(): Promise<string>;
+  listenToCradle(): void;
 };
 
 const { DatalogicScanner } = NativeModules;
