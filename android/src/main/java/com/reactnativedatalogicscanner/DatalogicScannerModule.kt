@@ -179,4 +179,14 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   override fun onDeviceExtracted() {
     emitCradleEvent(CradleEvent.EXTRACTED)
   }
+
+  @ReactMethod
+  fun addListener(String eventName) {
+    // Keep: Required for RN built in Event Emitter Calls.
+  }
+
+  @ReactMethod
+  fun removeListeners(Integer count) {
+    // Keep: Required for RN built in Event Emitter Calls.
+  }
 }
