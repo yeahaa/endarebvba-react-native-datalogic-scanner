@@ -3,6 +3,7 @@ package com.reactnativedatalogicscanner
 import com.datalogic.decode.BarcodeManager
 import com.datalogic.decode.DecodeException
 import com.datalogic.decode.ReadListener
+import com.datalogic.decode.configuration.ScannerProperties
 import com.datalogic.device.ErrorManager
 import com.datalogic.extension.selfshopping.cradle.Cradle
 import com.datalogic.extension.selfshopping.cradle.CradleInsertionListener
@@ -52,7 +53,9 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun scanOnce(promise: Promise) {
     try {
-      barcodeManagerOnce = BarcodeManager()
+      barcodeManagerOnce = BarcodeManager().apply {
+        setScannerProperties(this)
+      }
       ErrorManager.enableExceptions(true)
       listenerOnce = ReadListener { decodeResult ->
         promise.resolve(decodeResult.text)
@@ -74,7 +77,9 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
     }
 
     try {
-      barcodeManagerContinuous = BarcodeManager()
+      barcodeManagerContinuous = BarcodeManager().apply {
+        setScannerProperties(this)
+      }
       ErrorManager.enableExceptions(true)
       listenerContinuous = ReadListener { decodeResult ->
         emitBarcode(decodeResult.text)
@@ -188,5 +193,15 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun removeListeners(count: Int) {
     // Keep: Required for RN built in Event Emitter Calls.
+  }
+
+  private fun setScannerProperties(barcodeManager: BarcodeManager) {
+    ScannerProperties.edit(barcodeManager).apply {
+      ean13.sendChecksum.set(true)
+      code39.code32.set(false)
+      goodread.goodReadEnable.set(true)
+      displayNotification.enable.set(false)
+      store(barcodeManager, true)
+    }
   }
 }
