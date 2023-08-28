@@ -4,12 +4,12 @@ buildscript {
 
   repositories {
     google()
-    jcenter()
+    mavenCentral()
     maven { url "https://jitpack.io" }
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.0.2'
+    classpath 'com.android.tools.build:gradle:7.0.4'
     classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
   }
 }
@@ -32,12 +32,11 @@ configurations.all {
 }
 
 android {
-  compileSdkVersion 'Datalogic:Datalogic SDK v1:23'
-  buildToolsVersion getExtOrDefault('buildToolsVersion')
+  compileSdkVersion 'Datalogic:Datalogic SDK v1:29'
   defaultConfig {
     minSdkVersion 16
 //    targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
-    targetSdkVersion 23
+    targetSdkVersion 31
     versionCode 1
     versionName "1.0"
 
@@ -59,7 +58,6 @@ android {
 
 repositories {
   mavenCentral()
-  jcenter()
   google()
 
   def found = false
@@ -135,6 +133,6 @@ dependencies {
   api 'com.facebook.react:react-native:+'
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-//  implementation 'com.github.datalogic:datalogic-android-sdk:1.12'
+//  implementation 'com.github.datalogic:datalogic-android-sdk:1.32'
   implementation 'com.github.datalogic:datalogic-android-sdk-selfshopping:v1.8a'
 }

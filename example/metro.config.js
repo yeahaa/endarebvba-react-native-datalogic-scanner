@@ -28,7 +28,6 @@ module.exports = {
       return acc;
     }, {}),
   },
-
   transformer: {
     getTransformOptions: async () => ({
       transform: {
