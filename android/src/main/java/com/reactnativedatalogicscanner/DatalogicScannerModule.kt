@@ -90,7 +90,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       //ZELF
       //barcodeManagerContinuous!!.addReadListener(listenerContinuous)
       val added = barcodeManagerContinuous!!.addReadListener(listenerContinuous)
-      if (added) {
+      if (added > 0) {
         promise.resolve(true)
       } else {
          promise.reject("LISTENER_ERROR", "Failed to add read listener")
