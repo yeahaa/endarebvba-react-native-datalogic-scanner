@@ -73,6 +73,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun startScanning(promise: Promise) {
     if (barcodeManagerContinuous != null) {
+      promise.resolve(true) // Already started
       return
     }
 
@@ -83,9 +84,17 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       ErrorManager.enableExceptions(true)
       listenerContinuous = ReadListener { decodeResult ->
         emitBarcode(decodeResult.text)
-        promise.resolve(decodeResult.text)
+        // Do NOT resolve the promise here!
+        //promise.resolve(decodeResult.text)
       }
-      barcodeManagerContinuous!!.addReadListener(listenerContinuous)
+      //ZELF
+      //barcodeManagerContinuous!!.addReadListener(listenerContinuous)
+      val added = barcodeManagerContinuous!!.addReadListener(listenerContinuous)
+      if (added) {
+        promise.resolve(true)
+      } else {
+         promise.reject("LISTENER_ERROR", "Failed to add read listener")
+      }
     } catch (de: DecodeException) {
       promise.reject(de)
     } catch (e: Exception) {

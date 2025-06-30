@@ -9,7 +9,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:7.2.2'
+    classpath 'com.android.tools.build:gradle:7.4.0'
     classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
   }
 }
@@ -27,12 +27,12 @@ def getExtOrIntegerDefault(name) {
 
 configurations.all {
      resolutionStrategy {
-       force "com.facebook.soloader:soloader:0.8.0"
+       force "com.facebook.soloader:soloader:0.11.0"
      }
 }
 
 android {
-  compileSdkVersion 'Datalogic:Datalogic SDK v1:30'
+  compileSdkVersion 'Datalogic:Datalogic SDK v1:32'
   defaultConfig {
     minSdkVersion 16
 //    targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
@@ -51,8 +51,8 @@ android {
     disable 'GradleCompatible'
   }
   compileOptions {
-    sourceCompatibility JavaVersion.VERSION_11
-    targetCompatibility JavaVersion.VERSION_11
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
   }
 }
 
