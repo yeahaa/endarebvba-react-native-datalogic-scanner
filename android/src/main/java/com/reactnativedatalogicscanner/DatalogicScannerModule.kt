@@ -27,11 +27,12 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   private var cradleListenerRegistered = false
   private var cradleManagerInitialized = false
   private var keepAliveStarted = false
+  private var lastState: Cradle.InsertionState? = null
   private val handler = Handler(Looper.getMainLooper())
   private val cradleKeepAliveRunnable = Runnable { keepCradleAlive() }
 
   init {
-      // Init cradle if available
+    // Init cradle if available
     hasCradle()
 
     reactContext.addLifecycleEventListener(
@@ -70,15 +71,17 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   private fun emitBarcode(barcode: String) {
     val params = Arguments.createMap()
     params.putString("barcode", barcode)
-    reactApplicationContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-      .emit("BarcodeScanned", params)
+    reactApplicationContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit("BarcodeScanned", params)
   }
 
   private fun emitCradleEvent(event: CradleEvent) {
     val params = Arguments.createMap()
     params.putString("type", event.name)
-    reactApplicationContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-      .emit("CradleChanged", params)
+    reactApplicationContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit("CradleChanged", params)
   }
 
   @ReactMethod
@@ -93,9 +96,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun scanOnce(promise: Promise) {
     try {
-      barcodeManagerOnce = BarcodeManager().apply {
-        setScannerProperties(this)
-      }
+      barcodeManagerOnce = BarcodeManager().apply { setScannerProperties(this) }
       ErrorManager.enableExceptions(true)
       listenerOnce = ReadListener { decodeResult ->
         promise.resolve(decodeResult.text)
@@ -118,17 +119,15 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
     }
 
     try {
-      barcodeManagerContinuous = BarcodeManager().apply {
-        setScannerProperties(this)
-      }
+      barcodeManagerContinuous = BarcodeManager().apply { setScannerProperties(this) }
       ErrorManager.enableExceptions(true)
       listenerContinuous = ReadListener { decodeResult ->
         emitBarcode(decodeResult.text)
         // Do NOT resolve the promise here!
-        //promise.resolve(decodeResult.text)
+        // promise.resolve(decodeResult.text)
       }
       // ZELF
-      //barcodeManagerContinuous!!.addReadListener(listenerContinuous)
+      // barcodeManagerContinuous!!.addReadListener(listenerContinuous)
       val added = barcodeManagerContinuous!!.addReadListener(listenerContinuous)
       if (added > 0) {
         promise.resolve(true)
@@ -204,7 +203,8 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
 
     cradleJoyaTouch?.let { cradle ->
       when (cradle.insertionState) {
-        Cradle.InsertionState.INSERTED_CORRECTLY -> promise.resolve(CradleEvent.INSERTED_CORRECTLY.name)
+        Cradle.InsertionState.INSERTED_CORRECTLY ->
+                promise.resolve(CradleEvent.INSERTED_CORRECTLY.name)
         Cradle.InsertionState.INSERTED_WRONGLY -> promise.resolve(CradleEvent.INSERTED_WRONGLY.name)
         Cradle.InsertionState.EXTRACTED -> promise.resolve(CradleEvent.EXTRACTED.name)
         else -> promise.reject(CradleNotFoundException())
@@ -214,64 +214,65 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun listenToCradle() {
-    if (!hasCradle() || cradleJoyaTouch == null) {
-      return
-    }
-    /*
-    cradleJoyaTouch?.apply {
-      removeCradleInsertionListener(this@DatalogicScannerModule)
-      addCradleInsertionListener(this@DatalogicScannerModule)
-    } */
-    cradleJoyaTouch?.let { cradle ->
-      if (!cradleListenerRegistered) {
-        cradle.addCradleInsertionListener(this)
-        cradleListenerRegistered = true
-      }
-      // REQUIRED on Joya Touch 22 — forces service binding or the listener will stop firing after
-      // idle/sleep.
-      // Emit current state immediately (important) This prevents state desynchronization between
-      // native and React Native.
-      when (cradle.insertionState) {
-        Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
-        Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
-        Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
-        else -> {}
-      }
+    if (!hasCradle() || cradleJoyaTouch == null) return
 
-      if (!keepAliveStarted) {
-        handler.postDelayed(cradleKeepAliveRunnable, 3000)
-        keepAliveStarted = true
+    val cradle = cradleJoyaTouch!!
+
+    try {
+      cradle.removeCradleInsertionListener(this)
+    } catch (_: Exception) {}
+    cradle.addCradleInsertionListener(this)
+    cradleListenerRegistered = true
+
+    // Emit current state
+    val state = cradle.insertionState
+    lastState = state
+    when (state) {
+      Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
+      Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
+      Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
+      else -> {}
+    }
+
+    // Start keep-alive
+    if (!keepAliveStarted) {
+      keepAliveStarted = true
+      handler.postDelayed(cradleKeepAliveRunnable, 5000)
+    }
+
+    cradleManagerInitialized = true
+  }
+  /** Keep-alive logic for idle devices */
+  private fun keepCradleAlive() {
+    try {
+      cradleJoyaTouch?.let { cradle ->
+        val state = cradle.insertionState
+        if (state != lastState) {
+          lastState = state
+          emitCradleEvent(
+                  when (state) {
+                    Cradle.InsertionState.INSERTED_CORRECTLY -> CradleEvent.INSERTED_CORRECTLY
+                    Cradle.InsertionState.INSERTED_WRONGLY -> CradleEvent.INSERTED_WRONGLY
+                    Cradle.InsertionState.EXTRACTED -> CradleEvent.EXTRACTED
+                    else -> null
+                  }
+          )
+        }
       }
-      cradleManagerInitialized = true
+    } catch (e: Exception) {
+      // Herstel cradle service
+      cradleListenerRegistered = false
+      cradleJoyaTouch = null
+      cradleManagerInitialized = false
+      lastState = null
+      keepAliveStarted = false
+      if (hasCradle()) listenToCradle()
+    } finally {
+      if (keepAliveStarted) {
+        handler.postDelayed(cradleKeepAliveRunnable, 5000)
+      }
     }
   }
-   /** Keep-alive logic for idle devices */
-    private fun keepCradleAlive() {
-        cradleJoyaTouch?.let { cradle ->
-            try {
-                // Optional: emit current state each keep-alive cycle
-                when (cradle.insertionState) {
-                    Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
-                    Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
-                    Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
-                    else -> {}
-                }
-            } catch (e: Exception) {
-                // Service died, attempt recovery
-                cradleListenerRegistered = false
-                cradleManagerInitialized = false
-                keepAliveStarted = false
-
-                if (hasCradle()) listenToCradle()
-                return
-            }
-        }
-
-        if (cradleManagerInitialized) {
-            handler.postDelayed(cradleKeepAliveRunnable, 3000)
-        }
-    }
-
   override fun onDeviceInsertedCorrectly() {
     emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
   }
