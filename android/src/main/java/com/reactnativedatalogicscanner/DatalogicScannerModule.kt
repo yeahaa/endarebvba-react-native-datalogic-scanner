@@ -249,14 +249,13 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
         val state = cradle.insertionState
         if (state != lastState) {
           lastState = state
-          emitCradleEvent(
-                  when (state) {
-                    Cradle.InsertionState.INSERTED_CORRECTLY -> CradleEvent.INSERTED_CORRECTLY
-                    Cradle.InsertionState.INSERTED_WRONGLY -> CradleEvent.INSERTED_WRONGLY
-                    Cradle.InsertionState.EXTRACTED -> CradleEvent.EXTRACTED
-                    else -> null
-                  }
-          )
+          when (state) {
+            Cradle.InsertionState.INSERTED_CORRECTLY ->
+                    emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
+            Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
+            Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
+            else -> {}
+          }
         }
       }
     } catch (e: Exception) {
