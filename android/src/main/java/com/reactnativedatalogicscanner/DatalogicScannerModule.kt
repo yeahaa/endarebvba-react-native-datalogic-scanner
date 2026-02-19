@@ -167,13 +167,13 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       if (cradle.insertionState == Cradle.InsertionState.INSERTED_CORRECTLY) {
         cradle.controlLock(LockAction.UNLOCK)
         promise.resolve(true)
-
-        return
+      } else {
+        // Already unlocked
+        promise.resolve(false)
       }
-
-      // Already unlocked
-      promise.resolve(false)
     }
+    // Zorg dat listener actief blijft en keep-alive loopt
+    listenToCradle()
   }
 
   private fun hasCradle(): Boolean {
