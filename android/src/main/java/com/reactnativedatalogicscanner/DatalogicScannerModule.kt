@@ -209,7 +209,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
     }
 
     try {
-      val cradle = CradleManager.getCradle(reactApplicationContext)
+      val cradle = CradleManager.getCradle()
       if (cradle != null && cradle.type == CradleType.JOYA_TOUCH_CRADLE) {
         cradleJoyaTouch = cradle as CradleJoyaTouch
         return true
