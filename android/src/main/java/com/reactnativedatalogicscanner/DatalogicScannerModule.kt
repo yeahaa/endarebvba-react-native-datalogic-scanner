@@ -159,13 +159,13 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   fun unlockFromCradle(promise: Promise) {
     if (!hasCradle() || cradleJoyaTouch == null) {
       promise.reject(CradleNotFoundException())
-
       return
     }
 
     cradleJoyaTouch?.let { cradle ->
       if (cradle.insertionState == Cradle.InsertionState.INSERTED_CORRECTLY) {
         cradle.controlLock(LockAction.UNLOCK)
+        lastState = null
         promise.resolve(true)
       } else {
         // Already unlocked
