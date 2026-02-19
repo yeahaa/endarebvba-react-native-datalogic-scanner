@@ -31,9 +31,10 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   private val cradleKeepAliveRunnable = Runnable { keepCradleAlive() }
 
   init {
+      // Init cradle if available
     hasCradle()
 
-    reactApplicationContext.addLifecycleEventListener(
+    reactContext.addLifecycleEventListener(
             object : LifecycleEventListener {
               override fun onHostResume() {
                 if (cradleManagerInitialized) {
@@ -228,10 +229,9 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       }
       // REQUIRED on Joya Touch 22 — forces service binding or the listener will stop firing after
       // idle/sleep.
-      val state = cradle.insertionState
       // Emit current state immediately (important) This prevents state desynchronization between
       // native and React Native.
-      when (state) {
+      when (cradle.insertionState) {
         Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
         Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
         Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
@@ -239,7 +239,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       }
 
       if (!keepAliveStarted) {
-        handler.post(cradleKeepAliveRunnable)
+        handler.postDelayed(cradleKeepAliveRunnable, 3000)
         keepAliveStarted = true
       }
       cradleManagerInitialized = true
@@ -249,9 +249,8 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
     private fun keepCradleAlive() {
         cradleJoyaTouch?.let { cradle ->
             try {
-                val state = cradle.insertionState
                 // Optional: emit current state each keep-alive cycle
-                when (state) {
+                when (cradle.insertionState) {
                     Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
                     Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
                     Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
@@ -259,13 +258,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
                 }
             } catch (e: Exception) {
                 // Service died, attempt recovery
-                cradleJoyaTouch?.let {
-                    if (cradleListenerRegistered) {
-                        try { it.removeCradleInsertionListener(this) } catch (_: Exception) {}
-                        cradleListenerRegistered = false
-                    }
-                }
-                cradleJoyaTouch = null
+                cradleListenerRegistered = false
                 cradleManagerInitialized = false
                 keepAliveStarted = false
 
@@ -275,7 +268,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
         }
 
         if (cradleManagerInitialized) {
-            handler.postDelayed(cradleKeepAliveRunnable, 30000)
+            handler.postDelayed(cradleKeepAliveRunnable, 3000)
         }
     }
 
