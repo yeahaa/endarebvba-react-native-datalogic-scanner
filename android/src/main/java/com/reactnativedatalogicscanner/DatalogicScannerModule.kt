@@ -27,35 +27,8 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   private var cradleListenerRegistered = false
   private var cradleManagerInitialized = false
   private var keepAliveStarted = false
-  private val cradleKeepAliveRunnable =
-          object : Runnable {
-            override fun run() {
-              try {
-                cradleJoyaTouch?.insertionState
-              } catch (e: Exception) {
-                // e.printStackTrace()
-                cradleJoyaTouch?.let {
-                  if (cradleListenerRegistered) {
-                    try {
-                      it.removeCradleInsertionListener(this@DatalogicScannerModule)
-                    } catch (_: Exception) {}
-                  }
-                }
-                // attempt recovery
-                cradleJoyaTouch = null
-                cradleManagerInitialized = false
-                cradleListenerRegistered = false
-                keepAliveStarted = false
-
-                hasCradle()
-                listenToCradle()
-              }
-              if (cradleManagerInitialized) {
-                handler.postDelayed(this, 30000)
-              }
-            }
-          }
   private val handler = Handler(Looper.getMainLooper())
+  private val cradleKeepAliveRunnable = Runnable { keepCradleAlive() }
 
   init {
     hasCradle()
@@ -272,6 +245,39 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       cradleManagerInitialized = true
     }
   }
+   /** Keep-alive logic for idle devices */
+    private fun keepCradleAlive() {
+        cradleJoyaTouch?.let { cradle ->
+            try {
+                val state = cradle.insertionState
+                // Optional: emit current state each keep-alive cycle
+                when (state) {
+                    Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
+                    Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
+                    Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                // Service died, attempt recovery
+                cradleJoyaTouch?.let {
+                    if (cradleListenerRegistered) {
+                        try { it.removeCradleInsertionListener(this) } catch (_: Exception) {}
+                        cradleListenerRegistered = false
+                    }
+                }
+                cradleJoyaTouch = null
+                cradleManagerInitialized = false
+                keepAliveStarted = false
+
+                if (hasCradle()) listenToCradle()
+                return
+            }
+        }
+
+        if (cradleManagerInitialized) {
+            handler.postDelayed(cradleKeepAliveRunnable, 30000)
+        }
+    }
 
   override fun onDeviceInsertedCorrectly() {
     emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
