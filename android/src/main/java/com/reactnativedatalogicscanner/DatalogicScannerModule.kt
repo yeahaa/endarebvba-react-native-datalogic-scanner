@@ -163,8 +163,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
     }
 
     cradleJoyaTouch?.let { cradle ->
-      if (cradle.insertionState == Cradle.InsertionState.INSERTED_CORRECTLY || cradle.insertionState == Cradle.InsertionState.INSERTED_WRONGLY) {
-        //also allow to unlock when wrongly inserted, as this can also cause lock issues
+      if (cradle.insertionState == Cradle.InsertionState.INSERTED_CORRECTLY) {
         cradle.controlLock(LockAction.UNLOCK)
         lastState = null
         promise.resolve(true)
@@ -278,6 +277,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
   }
 
   override fun onDeviceInsertedWrongly() {
+    //also inserted wrongly when the cradle has no power
     lastState = Cradle.InsertionState.INSERTED_WRONGLY
     emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
   }
