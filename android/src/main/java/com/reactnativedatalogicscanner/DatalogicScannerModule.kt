@@ -219,28 +219,27 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
     val cradle = cradleJoyaTouch!!
 
     try {
-      cradle.removeCradleInsertionListener(this)
+      cradle.removeCradleInsertionListener(this@DatalogicScannerModule)
+      cradle.addCradleInsertionListener(this@DatalogicScannerModule)
+      cradleListenerRegistered = true
+      // Emit current state
+      val state = cradle.insertionState
+      lastState = state
+      when (state) {
+        Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
+        Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
+        Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
+        else -> {}
+      }
+
+      // Start keep-alive
+      if (!keepAliveStarted) {
+        keepAliveStarted = true
+        handler.postDelayed(cradleKeepAliveRunnable, 5000)
+      }
+
+      cradleManagerInitialized = true
     } catch (_: Exception) {}
-    cradle.addCradleInsertionListener(this)
-    cradleListenerRegistered = true
-
-    // Emit current state
-    val state = cradle.insertionState
-    lastState = state
-    when (state) {
-      Cradle.InsertionState.INSERTED_CORRECTLY -> emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
-      Cradle.InsertionState.INSERTED_WRONGLY -> emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
-      Cradle.InsertionState.EXTRACTED -> emitCradleEvent(CradleEvent.EXTRACTED)
-      else -> {}
-    }
-
-    // Start keep-alive
-    if (!keepAliveStarted) {
-      keepAliveStarted = true
-      handler.postDelayed(cradleKeepAliveRunnable, 5000)
-    }
-
-    cradleManagerInitialized = true
   }
   /** Keep-alive logic for idle devices */
   private fun keepCradleAlive() {
@@ -273,14 +272,17 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
     }
   }
   override fun onDeviceInsertedCorrectly() {
+    lastState = Cradle.InsertionState.INSERTED_CORRECTLY
     emitCradleEvent(CradleEvent.INSERTED_CORRECTLY)
   }
 
   override fun onDeviceInsertedWrongly() {
+    lastState = Cradle.InsertionState.INSERTED_WRONGLY
     emitCradleEvent(CradleEvent.INSERTED_WRONGLY)
   }
 
   override fun onDeviceExtracted() {
+    lastState = Cradle.InsertionState.EXTRACTED
     emitCradleEvent(CradleEvent.EXTRACTED)
   }
 
