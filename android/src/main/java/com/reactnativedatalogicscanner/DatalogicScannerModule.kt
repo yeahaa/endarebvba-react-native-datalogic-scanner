@@ -235,7 +235,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       // Start keep-alive
       if (!keepAliveStarted) {
         keepAliveStarted = true
-        handler.postDelayed(cradleKeepAliveRunnable, 5000)
+        handler.postDelayed(cradleKeepAliveRunnable, 30000)
       }
 
       cradleManagerInitialized = true
@@ -267,7 +267,7 @@ class DatalogicScannerModule(reactContext: ReactApplicationContext) :
       if (hasCradle()) listenToCradle()
     } finally {
       if (keepAliveStarted) {
-        handler.postDelayed(cradleKeepAliveRunnable, 5000)
+        handler.postDelayed(cradleKeepAliveRunnable, 30000)
       }
     }
   }
