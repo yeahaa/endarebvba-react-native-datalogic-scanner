@@ -59,6 +59,7 @@ android {
 repositories {
   mavenCentral()
   google()
+  maven { url "https://jitpack.io" }
 
   def found = false
   def defaultDir = null
