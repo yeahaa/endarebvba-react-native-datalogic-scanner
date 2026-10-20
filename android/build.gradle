@@ -1,18 +1,5 @@
-buildscript {
-  // Buildscript is evaluated before everything else so we can't use getExtOrDefault
-  def kotlin_version = rootProject.ext.has('kotlinVersion') ? rootProject.ext.get('kotlinVersion') : project.properties['DatalogicScanner_kotlinVersion']
-
-  repositories {
-    google()
-    mavenCentral()
-    maven { url "https://jitpack.io" }
-  }
-
-  dependencies {
-    classpath 'com.android.tools.build:gradle:7.4.0'
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-  }
-}
+// Geen buildscript-blok meer: AGP en de Kotlin Gradle-plugin komen uit de
+// root build.gradle van de Mendix Native Template (React Native-app).
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
@@ -25,21 +12,15 @@ def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties['DatalogicScanner_' + name]).toInteger()
 }
 
-configurations.all {
-     resolutionStrategy {
-       force "com.facebook.soloader:soloader:0.11.0"
-     }
-}
-
 android {
-  compileSdkVersion 'Datalogic:Datalogic SDK v1:32'
-  defaultConfig {
-    minSdkVersion 16
-//    targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
-    targetSdkVersion 31
-    versionCode 1
-    versionName "1.0"
+  namespace 'com.reactnativedatalogicscanner'
 
+  // De Datalogic SDK-klassen (com.datalogic.decode / com.datalogic.device)
+  // komen hier nog uit de lokaal geinstalleerde SDK add-on.
+  compileSdkVersion 'Datalogic:Datalogic SDK v1:32'
+
+  defaultConfig {
+    minSdkVersion getExtOrIntegerDefault('minSdkVersion')
   }
 
   buildTypes {
@@ -47,93 +28,33 @@ android {
       minifyEnabled false
     }
   }
-  lintOptions {
+
+  lint {
     disable 'GradleCompatible'
   }
+
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
     targetCompatibility JavaVersion.VERSION_17
   }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
 }
 
 repositories {
-  mavenCentral()
   google()
+  mavenCentral()
   maven { url "https://jitpack.io" }
-
-  def found = false
-  def defaultDir = null
-  def androidSourcesName = 'React Native sources'
-
-  if (rootProject.ext.has('reactNativeAndroidRoot')) {
-    defaultDir = rootProject.ext.get('reactNativeAndroidRoot')
-  } else {
-    defaultDir = new File(
-            projectDir,
-            '/../../../node_modules/react-native/android'
-    )
-  }
-
-  if (defaultDir.exists()) {
-    maven {
-      url defaultDir.toString()
-      name androidSourcesName
-    }
-
-    logger.info(":${project.name}:reactNativeAndroidRoot ${defaultDir.canonicalPath}")
-    found = true
-  } else {
-    def parentDir = rootProject.projectDir
-
-    1.upto(5, {
-      if (found) return true
-      parentDir = parentDir.parentFile
-
-      def androidSourcesDir = new File(
-              parentDir,
-              'node_modules/react-native'
-      )
-
-      def androidPrebuiltBinaryDir = new File(
-              parentDir,
-              'node_modules/react-native/android'
-      )
-
-      if (androidPrebuiltBinaryDir.exists()) {
-        maven {
-          url androidPrebuiltBinaryDir.toString()
-          name androidSourcesName
-        }
-
-        logger.info(":${project.name}:reactNativeAndroidRoot ${androidPrebuiltBinaryDir.canonicalPath}")
-        found = true
-      } else if (androidSourcesDir.exists()) {
-        maven {
-          url androidSourcesDir.toString()
-          name androidSourcesName
-        }
-
-        logger.info(":${project.name}:reactNativeAndroidRoot ${androidSourcesDir.canonicalPath}")
-        found = true
-      }
-    })
-  }
-
-  if (!found) {
-    throw new GradleException(
-            "${project.name}: unable to locate React Native android sources. " +
-                    "Ensure you have you installed React Native as a dependency in your project and try again."
-    )
-  }
 }
 
 def kotlin_version = getExtOrDefault('kotlinVersion')
 
 dependencies {
-  // noinspection GradleDynamicVersion
-  api 'com.facebook.react:react-native:+'
+  // Versie wordt bepaald door de React Native Gradle-plugin van de app.
+  implementation 'com.facebook.react:react-android'
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-//  implementation 'com.github.datalogic:datalogic-android-sdk:1.32'
   implementation 'com.github.datalogic:datalogic-android-sdk-selfshopping:v1.8a'
 }
